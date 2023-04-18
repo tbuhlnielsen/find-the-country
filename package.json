@@ -1,0 +1,9 @@
+{
+  "name": "find-the-country",
+  "version": "1.0.0",
+  "description": "A geography game",
+  "scripts": {
+    "serve": "npx serve"
+  },
+  "author": "tbuhlnielsen"
+}
