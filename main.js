@@ -22,3 +22,12 @@ L.tileLayer(
     noWrap: true
   }
 ).addTo(map);
+
+let countryBoundariesGeoJson;
+
+fetch('./country-boundaries.geojson')
+  .then(response => response.json())
+  .then(data => {
+    countryBoundariesGeoJson = L.geoJson(data).addTo(map);
+  })
+  .catch(console.error);
