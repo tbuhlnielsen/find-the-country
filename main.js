@@ -25,9 +25,34 @@ L.tileLayer(
 
 let countryBoundariesGeoJson;
 
+function highlightFeature(e) {
+  const layer = e.target;
+  layer.setStyle({
+    color: '#0066ff',
+    fillColor: '#0066ff',
+    fillOpacity: 0.5,
+    weight: 2
+  });
+  layer.bringToFront();
+}
+
+function resetHighlight(e) {
+  countryBoundariesGeoJson.resetStyle(e.target);
+}
+
+function onEachFeature(feature, layer) {
+  layer.on({
+    mouseover: highlightFeature,
+    mouseout: resetHighlight
+  });
+}
+
 fetch('./country-boundaries.geojson')
   .then(response => response.json())
   .then(data => {
-    countryBoundariesGeoJson = L.geoJson(data).addTo(map);
+    countryBoundariesGeoJson = L.geoJson(data, {
+      onEachFeature,
+      style: { fillColor: 'transparent', color: 'transparent' }
+    }).addTo(map);
   })
   .catch(console.error);
