@@ -23,6 +23,59 @@ L.tileLayer(
   }
 ).addTo(map);
 
+let target = 'South Africa';
+let guessCorrect;
+
+function isCountry(geoJsonFeature) {
+  return geoJsonFeature.properties.status === 'Member State';
+}
+
+// https://stackoverflow.com/questions/31790344/determine-if-a-point-reside-inside-a-leaflet-polygon
+function isPointInsidePolygon(point, poly) {
+  const x = point.lat;
+  const y = point.lng;
+  let inside = false;
+  for (let ii = 0; ii < poly.length; ii++) {
+    const polyPoints = poly[ii];
+    for (var i = 0, j = polyPoints.length - 1; i < polyPoints.length; j = i++) {
+      const [yi, xi] = polyPoints[i];
+      const [yj, xj] = polyPoints[j];
+      const intersect =
+        yi > y != yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi;
+      if (intersect) inside = !inside;
+    }
+  }
+  return inside;
+}
+
+function isGeoJsonFeatureMultiPolygons(feature) {
+  // True for countries with multiple separated territories.
+  return feature.geometry.coordinates[0].length === 1;
+}
+
+function isClickInsideGeoJsonFeature(e, feature) {
+  if (isGeoJsonFeatureMultiPolygons(feature)) {
+    return targetFeature.geometry.coordinates.some(poly =>
+      isPointInsidePolygon(e.latlng, poly)
+    );
+  } else {
+    return isPointInsidePolygon(e.latlng, feature.geometry.coordinates);
+  }
+}
+
+function onMapClick(e) {
+  const targetFeature = countryBoundariesRawData.features.find(
+    feature => feature.properties.name === target
+  );
+  if (targetFeature) {
+    guessCorrect = isClickInsideGeoJsonFeature(e, targetFeature);
+    console.log(guessCorrect);
+  }
+}
+
+map.on('click', onMapClick);
+
+let countryBoundariesRawData;
 let countryBoundariesGeoJson;
 
 function highlightFeature(e) {
@@ -50,6 +103,7 @@ function onEachFeature(feature, layer) {
 fetch('./country-boundaries.geojson')
   .then(response => response.json())
   .then(data => {
+    countryBoundariesRawData = data;
     countryBoundariesGeoJson = L.geoJson(data, {
       onEachFeature,
       style: { fillColor: 'transparent', color: 'transparent' }
