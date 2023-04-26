@@ -67,12 +67,14 @@ function isClickInsideGeoJsonFeature(e, feature) {
 }
 
 function onMapClick(e) {
-  const targetFeature = countryBoundariesRawData.features.find(
-    feature => feature.properties.name === target
-  );
-  if (targetFeature) {
-    guessCorrect = isClickInsideGeoJsonFeature(e, targetFeature);
-    console.log(guessCorrect);
+  if (countryBoundariesRawData) {
+    const targetFeature = countryBoundariesRawData.features.find(
+      feature => feature.properties.name === target
+    );
+    if (targetFeature) {
+      guessCorrect = isClickInsideGeoJsonFeature(e, targetFeature);
+      console.log(guessCorrect);
+    }
   }
 }
 
