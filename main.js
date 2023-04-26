@@ -23,7 +23,10 @@ L.tileLayer(
   }
 ).addTo(map);
 
-let target = 'South Africa';
+let countryBoundariesRawData;
+let countryBoundariesGeoJson;
+let countryNames;
+let target;
 let guessCorrect;
 
 function isCountry(geoJsonFeature) {
@@ -75,9 +78,6 @@ function onMapClick(e) {
 
 map.on('click', onMapClick);
 
-let countryBoundariesRawData;
-let countryBoundariesGeoJson;
-
 function highlightFeature(e) {
   const layer = e.target;
   layer.setStyle({
@@ -104,6 +104,11 @@ fetch('./country-boundaries.geojson')
   .then(response => response.json())
   .then(data => {
     countryBoundariesRawData = data;
+    countryNames = countryBoundariesRawData.features
+      .filter(isCountry)
+      .map(feature => feature.properties.name);
+    target = countryNames[Math.floor(countryNames.length * Math.random())];
+    console.log('Target:', target);
     countryBoundariesGeoJson = L.geoJson(data, {
       onEachFeature,
       style: { fillColor: 'transparent', color: 'transparent' }
