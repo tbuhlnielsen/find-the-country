@@ -58,7 +58,7 @@ function isGeoJsonFeatureMultiPolygons(feature) {
 
 function isClickInsideGeoJsonFeature(e, feature) {
   if (isGeoJsonFeatureMultiPolygons(feature)) {
-    return targetFeature.geometry.coordinates.some(poly =>
+    return feature.geometry.coordinates.some(poly =>
       isPointInsidePolygon(e.latlng, poly)
     );
   } else {
