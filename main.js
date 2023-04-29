@@ -71,12 +71,13 @@ function isFeatureSelected(feature) {
   return false;
 }
 
-// MAP HOVER EVENTS
+// MAP EVENTS
 
 function onEachFeature(feature, layer) {
   layer.on({
     mouseover: onMouseOverFeature,
-    mouseout: onMouseOutFeature
+    mouseout: onMouseOutFeature,
+    click: zoomToFeature
   });
 }
 
@@ -99,8 +100,6 @@ function onMouseOutFeature(e) {
     countryBoundariesGeoJson.resetStyle(e.target);
   }
 }
-
-// MAP CLICK EVENT
 
 map.on('click', onMapClick);
 
@@ -148,4 +147,8 @@ function isPointInsidePolygon(point, poly) {
     }
   }
   return inside;
+}
+
+function zoomToFeature(e) {
+  map.fitBounds(e.target.getBounds());
 }
