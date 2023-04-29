@@ -1,3 +1,5 @@
+// INITIALISE MAP
+
 const boundsLatLng = [
   [-70, -179],
   [85, 179]
@@ -27,10 +29,103 @@ let countryBoundariesRawData;
 let countryBoundariesGeoJson;
 let countryNames;
 let target;
+let selectedGeoJsonFeature;
 let guessCorrect;
+
+fetch('./country-boundaries.geojson')
+  .then(response => response.json())
+  .then(data => {
+    countryBoundariesRawData = data;
+    countryNames = countryBoundariesRawData.features
+      .filter(isCountry)
+      .map(feature => feature.properties.name);
+    target = countryNames[Math.floor(countryNames.length * Math.random())];
+    countryBoundariesGeoJson = L.geoJson(data, {
+      onEachFeature,
+      style: featureStyle
+    }).addTo(map);
+    console.log('Target:', target);
+  })
+  .catch(console.error);
 
 function isCountry(geoJsonFeature) {
   return geoJsonFeature.properties.status === 'Member State';
+}
+
+function featureStyle(feature) {
+  const selected = isFeatureSelected(feature);
+  return {
+    color: selected ? '#6600ff' : 'transparent',
+    fillColor: selected ? '#6600ff' : 'transparent'
+  };
+}
+
+function isFeatureSelected(feature) {
+  if (selectedGeoJsonFeature) {
+    return feature.properties.name === selectedGeoJsonFeature.properties.name;
+  }
+  return false;
+}
+
+// MAP HOVER EVENTS
+
+function onEachFeature(feature, layer) {
+  layer.on({
+    mouseover: onMouseOverFeature,
+    mouseout: onMouseOutFeature
+  });
+}
+
+function onMouseOverFeature(e) {
+  if (isFeatureSelected(e.target.feature)) {
+    return;
+  }
+  const layer = e.target;
+  layer.setStyle({
+    color: '#0066ff',
+    fillColor: '#0066ff',
+    fillOpacity: 0.5,
+    weight: 2
+  });
+  layer.bringToFront();
+}
+
+function onMouseOutFeature(e) {
+  if (!isFeatureSelected(e.target.feature)) {
+    countryBoundariesGeoJson.resetStyle(e.target);
+  }
+}
+
+// MAP CLICK EVENT
+
+map.on('click', onMapClick);
+
+function onMapClick(e) {
+  if (countryBoundariesRawData) {
+    selectedGeoJsonFeature = countryBoundariesRawData.features.find(feature =>
+      isClickInsideGeoJsonFeature(e, feature)
+    );
+    if (selectedGeoJsonFeature) {
+      countryBoundariesGeoJson.setStyle(featureStyle);
+      guessCorrect = selectedGeoJsonFeature.properties.name === target;
+      console.log('Clicked:', selectedGeoJsonFeature.properties.name);
+    }
+  }
+}
+
+function isClickInsideGeoJsonFeature(e, feature) {
+  if (isGeoJsonFeatureMultiPolygons(feature)) {
+    return feature.geometry.coordinates.some(poly =>
+      isPointInsidePolygon(e.latlng, poly)
+    );
+  } else {
+    return isPointInsidePolygon(e.latlng, feature.geometry.coordinates);
+  }
+}
+
+function isGeoJsonFeatureMultiPolygons(feature) {
+  // True for countries with multiple separated territories.
+  return feature.geometry.coordinates[0].length === 1;
 }
 
 // https://stackoverflow.com/questions/31790344/determine-if-a-point-reside-inside-a-leaflet-polygon
@@ -50,70 +145,3 @@ function isPointInsidePolygon(point, poly) {
   }
   return inside;
 }
-
-function isGeoJsonFeatureMultiPolygons(feature) {
-  // True for countries with multiple separated territories.
-  return feature.geometry.coordinates[0].length === 1;
-}
-
-function isClickInsideGeoJsonFeature(e, feature) {
-  if (isGeoJsonFeatureMultiPolygons(feature)) {
-    return feature.geometry.coordinates.some(poly =>
-      isPointInsidePolygon(e.latlng, poly)
-    );
-  } else {
-    return isPointInsidePolygon(e.latlng, feature.geometry.coordinates);
-  }
-}
-
-function onMapClick(e) {
-  if (countryBoundariesRawData) {
-    const targetFeature = countryBoundariesRawData.features.find(
-      feature => feature.properties.name === target
-    );
-    if (targetFeature) {
-      guessCorrect = isClickInsideGeoJsonFeature(e, targetFeature);
-      console.log(guessCorrect);
-    }
-  }
-}
-
-map.on('click', onMapClick);
-
-function highlightFeature(e) {
-  const layer = e.target;
-  layer.setStyle({
-    color: '#0066ff',
-    fillColor: '#0066ff',
-    fillOpacity: 0.5,
-    weight: 2
-  });
-  layer.bringToFront();
-}
-
-function resetHighlight(e) {
-  countryBoundariesGeoJson.resetStyle(e.target);
-}
-
-function onEachFeature(feature, layer) {
-  layer.on({
-    mouseover: highlightFeature,
-    mouseout: resetHighlight
-  });
-}
-
-fetch('./country-boundaries.geojson')
-  .then(response => response.json())
-  .then(data => {
-    countryBoundariesRawData = data;
-    countryNames = countryBoundariesRawData.features
-      .filter(isCountry)
-      .map(feature => feature.properties.name);
-    target = countryNames[Math.floor(countryNames.length * Math.random())];
-    console.log('Target:', target);
-    countryBoundariesGeoJson = L.geoJson(data, {
-      onEachFeature,
-      style: { fillColor: 'transparent', color: 'transparent' }
-    }).addTo(map);
-  })
-  .catch(console.error);
