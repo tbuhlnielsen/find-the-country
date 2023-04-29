@@ -25,11 +25,28 @@
 
       body {
         margin: 0;
+        position: relative;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      }
+
+      #target-country {
+        background-color: #6600ff;
+        /* border: 2px solid #6600ff; */
+        color: white;
+        /* color: #6600ff; */
+        border-radius: 5px;
+        padding: 8px 16px;
+        position: absolute;
+        bottom: 10px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 1000;
       }
     </style>
     <title>Find the Country</title>
   </head>
   <body>
     <div id="map"></div>
+    <div id="target-country">&nbsp;</div>
   </body>
 </html>

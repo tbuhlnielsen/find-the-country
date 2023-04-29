@@ -1,3 +1,7 @@
+// DOM ELEMENTS
+
+const targetCountryElement = document.getElementById('target-country');
+
 // INITIALISE MAP
 
 const boundsLatLng = [
@@ -44,7 +48,7 @@ fetch('./country-boundaries.geojson')
       onEachFeature,
       style: featureStyle
     }).addTo(map);
-    console.log('Target:', target);
+    targetCountryElement.innerHTML = target;
   })
   .catch(console.error);
 
