@@ -6,11 +6,15 @@ const resultDialogElement = document.getElementById('result-dialog');
 // https://stackoverflow.com/questions/13698975/click-link-inside-leaflet-popup-and-do-javascript?rq=1
 const confirmGuessElement = document.createElement('button');
 confirmGuessElement.id = 'confirm-guess';
-confirmGuessElement.innerHTML = 'Confirm ✅';
+confirmGuessElement.textContent = 'Confirm ✅';
 confirmGuessElement.addEventListener('click', onConfirmGuess);
 
 const playAgainElement = document.getElementById('play-again');
 playAgainElement.addEventListener('click', onPlayAgain);
+
+const guessCorrectElement = document.getElementById('guess-correct');
+const guessIncorrectElement = document.getElementById('guess-incorrect');
+const guessElement = document.getElementById('guess');
 
 // INITIALISE MAP
 
@@ -179,6 +183,14 @@ function zoomToFeature(e) {
 
 function onConfirmGuess() {
   confirmationPopup.close();
+  if (guessCorrect) {
+    guessCorrectElement.style.display = 'block';
+    guessIncorrectElement.style.display = 'none';
+  } else {
+    guessCorrectElement.style.display = 'none';
+    guessIncorrectElement.style.display = 'block';
+    guessElement.textContent = selectedGeoJsonFeature.properties.name;
+  }
   resultDialogElement.show();
 }
 
