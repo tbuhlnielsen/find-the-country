@@ -33,10 +33,39 @@ body {
   border-radius: 5px;
   padding: 8px 16px;
   position: absolute;
-  bottom: 10px;
+  bottom: 35px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 1000;
+  animation: target-country-float 1.5s ease-in-out infinite;
+  animation-play-state: paused;
+}
+#target-country::after {
+  content: ' ';
+  width: 10px;
+  height: 10px;
+  background-color: #6600ff;
+  position: absolute;
+  bottom: -5px;
+  left: 50%;
+  z-index: 1000;
+  transform: translateX(-50%) rotate(45deg);
+}
+@keyframes target-country-float {
+  0% {
+    transform: translate(-50%, 0);
+  }
+  50% {
+    transform: translate(-50%, 5px);
+  }
+  100% {
+    transform: translate(-50%, 0);
+  }
+}
+@media (prefers-reduced-motion) {
+  #target-country {
+    animation: none;
+  }
 }
 
 #result-dialog {
