@@ -14,14 +14,14 @@ playAgainElement.addEventListener('click', onPlayAgain);
 
 // INITIALISE MAP
 
-const boundsLatLng = [
+const initMapBoundsLatLng = [
   [-70, -179],
   [85, 179]
 ];
 const mapCentre = [0, 0];
 const initZoom = 2;
 
-const map = L.map('map', { maxBounds: boundsLatLng }).setView(
+const map = L.map('map', { maxBounds: initMapBoundsLatLng }).setView(
   mapCentre,
   initZoom
 );
@@ -36,7 +36,7 @@ L.tileLayer(
     subdomains: 'abcd',
     maxZoom: 10,
     minZoom: 2,
-    bounds: boundsLatLng,
+    bounds: initMapBoundsLatLng,
     noWrap: true
   }
 ).addTo(map);
@@ -44,7 +44,8 @@ L.tileLayer(
 let countryBoundariesRawData;
 let countryBoundariesGeoJson;
 let countryNames;
-let target;
+
+let targetCountryName;
 let selectedGeoJsonFeature;
 let guessCorrect;
 
@@ -52,21 +53,16 @@ fetch('./country-boundaries.geojson')
   .then(response => response.json())
   .then(data => {
     countryBoundariesRawData = data;
-    countryNames = countryBoundariesRawData.features
-      .filter(isCountry)
-      .map(feature => feature.properties.name);
-    target = countryNames[Math.floor(countryNames.length * Math.random())];
     countryBoundariesGeoJson = L.geoJson(data, {
       onEachFeature,
       style: featureStyle
     }).addTo(map);
-    targetCountryElement.innerHTML = target;
+    countryNames = countryBoundariesRawData.features
+      .filter(isCountry)
+      .map(feature => feature.properties.name);
+    setNewTargetCountry();
   })
   .catch(console.error);
-
-function isCountry(geoJsonFeature) {
-  return geoJsonFeature.properties.status === 'Member State';
-}
 
 function featureStyle(feature) {
   const selected = isFeatureSelected(feature);
@@ -81,6 +77,19 @@ function isFeatureSelected(feature) {
     return feature.properties.name === selectedGeoJsonFeature.properties.name;
   }
   return false;
+}
+
+function isCountry(geoJsonFeature) {
+  return geoJsonFeature.properties.status === 'Member State';
+}
+
+function getTargetCountry() {
+  return countryNames[Math.floor(countryNames.length * Math.random())];
+}
+
+function setNewTargetCountry() {
+  targetCountryName = getTargetCountry();
+  targetCountryElement.innerHTML = targetCountryName;
 }
 
 // MAP EVENTS
@@ -122,7 +131,8 @@ function onMapClick(e) {
     );
     if (selectedGeoJsonFeature) {
       countryBoundariesGeoJson.setStyle(featureStyle);
-      guessCorrect = selectedGeoJsonFeature.properties.name === target;
+      guessCorrect =
+        selectedGeoJsonFeature.properties.name === targetCountryName;
       confirmationPopup.setLatLng(e.latlng).openOn(map);
     }
   }
@@ -174,4 +184,8 @@ function onConfirmGuess() {
 
 function onPlayAgain() {
   resultDialogElement.close();
+  setNewTargetCountry();
+  selectedGeoJsonFeature = undefined;
+  guessCorrect = false;
+  map.fitBounds(initMapBoundsLatLng);
 }
