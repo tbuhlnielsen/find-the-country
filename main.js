@@ -198,6 +198,7 @@ function onPlayAgain() {
   resultDialogElement.close();
   setNewTargetCountry();
   selectedGeoJsonFeature = undefined;
+  countryBoundariesGeoJson.resetStyle();
   guessCorrect = false;
   map.fitBounds(initMapBoundsLatLng);
 }
