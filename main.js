@@ -7,14 +7,14 @@ const resultDialogElement = document.getElementById('result-dialog');
 const confirmGuessElement = document.createElement('button');
 confirmGuessElement.id = 'confirm-guess';
 confirmGuessElement.textContent = 'Confirm ✅';
-confirmGuessElement.addEventListener('click', onConfirmGuess);
 
 const playAgainElement = document.getElementById('play-again');
-playAgainElement.addEventListener('click', onPlayAgain);
 
 const guessCorrectElement = document.getElementById('guess-correct');
 const guessIncorrectElement = document.getElementById('guess-incorrect');
 const guessElement = document.getElementById('guess');
+
+const seeAnswerElement = document.getElementById('see-answer');
 
 // INITIALISE MAP
 
@@ -52,6 +52,7 @@ let countryNames;
 let targetCountryName;
 let selectedGeoJsonFeature;
 let guessCorrect;
+let gameOver = false;
 
 fetch('./country-boundaries.geojson')
   .then(response => response.json())
@@ -69,11 +70,31 @@ fetch('./country-boundaries.geojson')
   .catch(console.error);
 
 function featureStyle(feature) {
-  const selected = isFeatureSelected(feature);
+  const colour = getFeatureColor(feature, { gameOver });
   return {
-    color: selected ? '#6600ff' : 'transparent',
-    fillColor: selected ? '#6600ff' : 'transparent'
+    color: colour,
+    fillColor: colour
   };
+}
+
+function getFeatureColor(feature, { gameOver }) {
+  if (gameOver) {
+    if (isFeatureCorrect(feature)) {
+      return '#00ff66';
+    }
+    if (isFeatureSelected(feature)) {
+      return '#ff0066';
+    }
+    return 'transparent';
+  }
+  if (isFeatureSelected(feature)) {
+    return '#6600ff';
+  }
+  return 'transparent';
+}
+
+function isFeatureCorrect(feature) {
+  return feature.properties.name === targetCountryName;
 }
 
 function isFeatureSelected(feature) {
@@ -107,7 +128,7 @@ function onEachFeature(feature, layer) {
 }
 
 function onMouseOverFeature(e) {
-  if (isFeatureSelected(e.target.feature)) {
+  if (gameOver || isFeatureSelected(e.target.feature)) {
     return;
   }
   const layer = e.target;
@@ -121,24 +142,24 @@ function onMouseOverFeature(e) {
 }
 
 function onMouseOutFeature(e) {
-  if (!isFeatureSelected(e.target.feature)) {
-    countryBoundariesGeoJson.resetStyle(e.target);
+  if (gameOver || isFeatureSelected(e.target.feature)) {
+    return;
   }
+  countryBoundariesGeoJson.resetStyle(e.target);
 }
 
 map.on('click', onMapClick);
 
 function onMapClick(e) {
-  if (countryBoundariesRawData) {
-    selectedGeoJsonFeature = countryBoundariesRawData.features.find(feature =>
-      isClickInsideGeoJsonFeature(e, feature)
-    );
-    if (selectedGeoJsonFeature) {
-      countryBoundariesGeoJson.setStyle(featureStyle);
-      guessCorrect =
-        selectedGeoJsonFeature.properties.name === targetCountryName;
-      confirmationPopup.setLatLng(e.latlng).openOn(map);
-    }
+  if (gameOver || !countryBoundariesRawData) {
+    return;
+  }
+  selectedGeoJsonFeature = countryBoundariesRawData.features.find(feature =>
+    isClickInsideGeoJsonFeature(e, feature)
+  );
+  if (selectedGeoJsonFeature) {
+    countryBoundariesGeoJson.setStyle(featureStyle);
+    confirmationPopup.setLatLng(e.latlng).openOn(map);
   }
 }
 
@@ -147,9 +168,8 @@ function isClickInsideGeoJsonFeature(e, feature) {
     return feature.geometry.coordinates.some(poly =>
       isPointInsidePolygon(e.latlng, poly)
     );
-  } else {
-    return isPointInsidePolygon(e.latlng, feature.geometry.coordinates);
   }
+  return isPointInsidePolygon(e.latlng, feature.geometry.coordinates);
 }
 
 function isGeoJsonFeatureMultiPolygons(feature) {
@@ -181,8 +201,11 @@ function zoomToFeature(e) {
 
 // POPUP EVENTS
 
+confirmGuessElement.addEventListener('click', onConfirmGuess);
+
 function onConfirmGuess() {
   confirmationPopup.close();
+  guessCorrect = isFeatureCorrect(selectedGeoJsonFeature);
   if (guessCorrect) {
     guessCorrectElement.style.display = 'block';
     guessIncorrectElement.style.display = 'none';
@@ -191,14 +214,26 @@ function onConfirmGuess() {
     guessIncorrectElement.style.display = 'block';
     guessElement.textContent = selectedGeoJsonFeature.properties.name;
   }
+  gameOver = true;
   resultDialogElement.show();
 }
+
+seeAnswerElement.addEventListener('click', onSeeAnswer);
+
+function onSeeAnswer() {
+  const answer = countryBoundariesRawData.features.find(isFeatureCorrect);
+  countryBoundariesGeoJson.setStyle(featureStyle);
+  map.fitBounds(L.geoJson(answer).getBounds());
+}
+
+playAgainElement.addEventListener('click', onPlayAgain);
 
 function onPlayAgain() {
   resultDialogElement.close();
   setNewTargetCountry();
   selectedGeoJsonFeature = undefined;
+  gameOver = false;
+  guessCorrect = undefined;
   countryBoundariesGeoJson.resetStyle();
-  guessCorrect = false;
   map.fitBounds(initMapBoundsLatLng);
 }
