@@ -87,6 +87,8 @@ function setNewTargetCountry() {
   const target = getTargetCountry();
   gameState.targetCountryName = target;
   targetCountryElement.textContent = `Where is ${target}?`;
+  // Only play the animation when the target is set to avoid
+  // a weird flicker while the data is loading.
   targetCountryElement.style.animationPlayState = 'running';
   answerElement.textContent = target;
 }
