@@ -1,9 +1,9 @@
-// DOM ELEMENTS
+// GET DOM ELEMENTS
 
 const targetCountryElement = document.getElementById('target-country');
 const resultDialogElement = document.getElementById('result-dialog');
 
-// https://stackoverflow.com/questions/13698975/click-link-inside-leaflet-popup-and-do-javascript?rq=1
+// https://stackoverflow.com/questions/13698975/click-link-inside-leaflet-popup-and-do-javascript
 const confirmGuessElement = document.createElement('button');
 confirmGuessElement.id = 'confirm-guess';
 confirmGuessElement.textContent = 'Confirm ✅';
@@ -16,21 +16,18 @@ const guessElement = document.getElementById('guess');
 
 const seeAnswerElement = document.getElementById('see-answer');
 
-// INITIALISE MAP
+// INITIALISE MAP OBJECT + POPUP
 
-const initMapBoundsLatLng = [
-  [-70, -179],
-  [85, 179]
-];
-const mapCentre = [0, 0];
-const initZoom = 2;
+const MAP_OPTIONS = {
+  center: [0, 0],
+  maxBounds: [
+    [-70, -179],
+    [85, 179]
+  ],
+  zoom: 2
+};
 
-const map = L.map('map', { maxBounds: initMapBoundsLatLng }).setView(
-  mapCentre,
-  initZoom
-);
-
-const confirmationPopup = L.popup().setContent(confirmGuessElement);
+const map = L.map('map', MAP_OPTIONS);
 
 L.tileLayer(
   'https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}{r}.png',
@@ -40,84 +37,110 @@ L.tileLayer(
     subdomains: 'abcd',
     maxZoom: 10,
     minZoom: 2,
-    bounds: initMapBoundsLatLng,
+    bounds: MAP_OPTIONS.maxBounds,
     noWrap: true
   }
 ).addTo(map);
 
-let countryBoundariesRawData;
-let countryBoundariesGeoJson;
-let countryNames;
+const confirmationPopup = L.popup().setContent(confirmGuessElement);
 
-let targetCountryName;
-let selectedGeoJsonFeature;
-let guessCorrect;
-let gameOver = false;
+// INITIALISE COUNTRY DATA + GAME STATE
+
+let countryData;
+
+let gameState = {
+  guessCorrect: false,
+  gameOver: false
+};
 
 fetch('./country-boundaries.geojson')
   .then(response => response.json())
   .then(data => {
-    countryBoundariesRawData = data;
-    countryBoundariesGeoJson = L.geoJson(data, {
-      onEachFeature,
-      style: featureStyle
-    }).addTo(map);
-    countryNames = countryBoundariesRawData.features
-      .filter(isCountry)
-      .map(feature => feature.properties.name);
-    setNewTargetCountry();
+    countryData = getCountryData(data);
+    resetGameState();
   })
   .catch(console.error);
 
-function featureStyle(feature) {
-  const colour = getFeatureColor(feature, { gameOver });
+function getCountryData(rawData) {
+  return {
+    rawData,
+    boundaries: L.geoJson(rawData, {
+      onEachFeature,
+      style: getMapFeatureStyle
+    }).addTo(map),
+    names: rawData.features
+      .filter(isCountry)
+      .map(feature => feature.properties.name)
+  };
+}
+
+function resetGameState() {
+  gameState = {
+    guessCorrect: false,
+    gameOver: false
+  };
+  setNewTargetCountry();
+}
+
+function setNewTargetCountry() {
+  const target = getTargetCountry();
+  gameState.targetCountryName = target;
+  targetCountryElement.textContent = target;
+}
+
+function getTargetCountry() {
+  const names = countryData.names;
+  return names[Math.floor(names.length * Math.random())];
+}
+
+// MAP STYLES
+
+const COLOUR_PALETTE = {
+  success: '#00ff66',
+  error: '#ff0066',
+  highlight: '#6600ff'
+};
+
+function getMapFeatureStyle(feature) {
+  const colour = getMapFeatureColor(feature, {
+    gameOver: gameState.gameOver
+  });
   return {
     color: colour,
     fillColor: colour
   };
 }
 
-function getFeatureColor(feature, { gameOver }) {
+function getMapFeatureColor(feature, { gameOver }) {
   if (gameOver) {
-    if (isFeatureCorrect(feature)) {
-      return '#00ff66';
+    if (isMapFeatureCorrect(feature)) {
+      return COLOUR_PALETTE.success;
     }
-    if (isFeatureSelected(feature)) {
-      return '#ff0066';
+    if (isMapFeatureSelected(feature)) {
+      return COLOUR_PALETTE.error;
     }
     return 'transparent';
   }
-  if (isFeatureSelected(feature)) {
-    return '#6600ff';
+  if (isMapFeatureSelected(feature)) {
+    return COLOUR_PALETTE.highlight;
   }
   return 'transparent';
 }
 
-function isFeatureCorrect(feature) {
-  return feature.properties.name === targetCountryName;
+function isMapFeatureCorrect(feature) {
+  return feature.properties.name === gameState.targetCountryName;
 }
 
-function isFeatureSelected(feature) {
-  if (selectedGeoJsonFeature) {
-    return feature.properties.name === selectedGeoJsonFeature.properties.name;
+function isMapFeatureSelected(feature) {
+  if (gameState.selectedMapFeature) {
+    return (
+      feature.properties.name === gameState.selectedMapFeature.properties.name
+    );
   }
   return false;
 }
 
-function isCountry(geoJsonFeature) {
-  return geoJsonFeature.properties.status === 'Member State';
-}
-
-function getTargetCountry() {
-  return countryNames[Math.floor(countryNames.length * Math.random())];
-}
-
-function setNewTargetCountry() {
-  targetCountryName = getTargetCountry();
-  targetCountryElement.innerHTML = targetCountryName;
-}
-
-// MAP EVENTS
+// COUNTRY HOVER + CLICK EVENTS
 
 function onEachFeature(feature, layer) {
   layer.on({
@@ -128,7 +151,7 @@ function onEachFeature(feature, layer) {
 }
 
 function onMouseOverFeature(e) {
-  if (gameOver || isFeatureSelected(e.target.feature)) {
+  if (gameState.gameOver || isMapFeatureSelected(e.target.feature)) {
     return;
   }
   const layer = e.target;
@@ -142,29 +165,35 @@ function onMouseOverFeature(e) {
 }
 
 function onMouseOutFeature(e) {
-  if (gameOver || isFeatureSelected(e.target.feature)) {
+  if (gameState.gameOver || isMapFeatureSelected(e.target.feature)) {
     return;
   }
-  countryBoundariesGeoJson.resetStyle(e.target);
+  countryData.boundaries.resetStyle(e.target);
 }
+
+function zoomToFeature(e) {
+  map.fitBounds(e.target.getBounds());
+}
+
+// MAP CLICK EVENT
 
 map.on('click', onMapClick);
 
 function onMapClick(e) {
-  if (gameOver || !countryBoundariesRawData) {
+  if (gameState.gameOver || !countryData.rawData) {
     return;
   }
-  selectedGeoJsonFeature = countryBoundariesRawData.features.find(feature =>
-    isClickInsideGeoJsonFeature(e, feature)
+  gameState.selectedMapFeature = countryData.rawData.features.find(feature =>
+    isClickInsideMapFeature(e, feature)
   );
-  if (selectedGeoJsonFeature) {
-    countryBoundariesGeoJson.setStyle(featureStyle);
+  if (gameState.selectedMapFeature) {
+    countryData.boundaries.setStyle(getMapFeatureStyle);
     confirmationPopup.setLatLng(e.latlng).openOn(map);
   }
 }
 
-function isClickInsideGeoJsonFeature(e, feature) {
-  if (isGeoJsonFeatureMultiPolygons(feature)) {
+function isClickInsideMapFeature(e, feature) {
+  if (isMapFeatureMultiPolygons(feature)) {
     return feature.geometry.coordinates.some(poly =>
       isPointInsidePolygon(e.latlng, poly)
     );
@@ -172,7 +201,7 @@ function isClickInsideGeoJsonFeature(e, feature) {
   return isPointInsidePolygon(e.latlng, feature.geometry.coordinates);
 }
 
-function isGeoJsonFeatureMultiPolygons(feature) {
+function isMapFeatureMultiPolygons(feature) {
   // True for countries with multiple separated territories.
   return feature.geometry.coordinates[0].length === 1;
 }
@@ -195,45 +224,52 @@ function isPointInsidePolygon(point, poly) {
   return inside;
 }
 
-function zoomToFeature(e) {
-  map.fitBounds(e.target.getBounds());
-}
-
 // POPUP EVENTS
 
 confirmGuessElement.addEventListener('click', onConfirmGuess);
 
 function onConfirmGuess() {
   confirmationPopup.close();
-  guessCorrect = isFeatureCorrect(selectedGeoJsonFeature);
-  if (guessCorrect) {
-    guessCorrectElement.style.display = 'block';
-    guessIncorrectElement.style.display = 'none';
+  gameState.guessCorrect = isMapFeatureCorrect(gameState.selectedMapFeature);
+  if (gameState.guessCorrect) {
+    setGuessCorrectElementVisible();
   } else {
-    guessCorrectElement.style.display = 'none';
-    guessIncorrectElement.style.display = 'block';
-    guessElement.textContent = selectedGeoJsonFeature.properties.name;
+    setGuessIncorrectElementVisible();
   }
-  gameOver = true;
+  gameState.gameOver = true;
+  countryData.boundaries.setStyle(getMapFeatureStyle);
   resultDialogElement.show();
+}
+
+function setGuessCorrectElementVisible() {
+  guessCorrectElement.style.display = 'block';
+  guessIncorrectElement.style.display = 'none';
+}
+
+function setGuessIncorrectElementVisible() {
+  guessCorrectElement.style.display = 'none';
+  guessIncorrectElement.style.display = 'block';
+  guessElement.textContent = gameState.selectedMapFeature.properties.name;
 }
 
 seeAnswerElement.addEventListener('click', onSeeAnswer);
 
 function onSeeAnswer() {
-  const answer = countryBoundariesRawData.features.find(isFeatureCorrect);
-  countryBoundariesGeoJson.setStyle(featureStyle);
-  map.fitBounds(L.geoJson(answer).getBounds());
+  const answer = countryData.rawData.features.find(isMapFeatureCorrect);
+  map.flyToBounds(L.geoJson(answer).getBounds());
 }
 
 playAgainElement.addEventListener('click', onPlayAgain);
 
 function onPlayAgain() {
   resultDialogElement.close();
-  setNewTargetCountry();
-  selectedGeoJsonFeature = undefined;
-  gameOver = false;
-  guessCorrect = undefined;
-  countryBoundariesGeoJson.resetStyle();
-  map.fitBounds(initMapBoundsLatLng);
+  resetGameState();
+  countryData.boundaries.resetStyle();
+  map.fitBounds(MAP_OPTIONS.maxBounds);
+}
+
+// HELPER FUNCTIONS
+
+function isCountry(geoJsonFeature) {
+  return geoJsonFeature.properties.status === 'Member State';
 }
