@@ -86,7 +86,7 @@ function resetGameState() {
 function setNewTargetCountry() {
   const target = getTargetCountry();
   gameState.targetCountryName = target;
-  targetCountryElement.textContent = `Where is ${target} ?`;
+  targetCountryElement.textContent = `Where is ${target}?`;
   targetCountryElement.style.animationPlayState = 'running';
   answerElement.textContent = target;
 }
