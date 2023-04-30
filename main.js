@@ -1,6 +1,16 @@
 // DOM ELEMENTS
 
 const targetCountryElement = document.getElementById('target-country');
+const resultDialogElement = document.getElementById('result-dialog');
+
+// https://stackoverflow.com/questions/13698975/click-link-inside-leaflet-popup-and-do-javascript?rq=1
+const confirmGuessElement = document.createElement('button');
+confirmGuessElement.id = 'confirm-guess';
+confirmGuessElement.innerHTML = 'Confirm ✅';
+confirmGuessElement.addEventListener('click', onConfirmGuess);
+
+const playAgainElement = document.getElementById('play-again');
+playAgainElement.addEventListener('click', onPlayAgain);
 
 // INITIALISE MAP
 
@@ -15,6 +25,8 @@ const map = L.map('map', { maxBounds: boundsLatLng }).setView(
   mapCentre,
   initZoom
 );
+
+const confirmationPopup = L.popup().setContent(confirmGuessElement);
 
 L.tileLayer(
   'https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}{r}.png',
@@ -111,7 +123,7 @@ function onMapClick(e) {
     if (selectedGeoJsonFeature) {
       countryBoundariesGeoJson.setStyle(featureStyle);
       guessCorrect = selectedGeoJsonFeature.properties.name === target;
-      console.log('Clicked:', selectedGeoJsonFeature.properties.name);
+      confirmationPopup.setLatLng(e.latlng).openOn(map);
     }
   }
 }
@@ -151,4 +163,15 @@ function isPointInsidePolygon(point, poly) {
 
 function zoomToFeature(e) {
   map.fitBounds(e.target.getBounds());
+}
+
+// POPUP EVENTS
+
+function onConfirmGuess() {
+  confirmationPopup.close();
+  resultDialogElement.show();
+}
+
+function onPlayAgain() {
+  resultDialogElement.close();
 }

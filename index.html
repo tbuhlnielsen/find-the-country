@@ -42,11 +42,21 @@
         transform: translateX(-50%);
         z-index: 1000;
       }
+
+      #result-dialog {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        z-index: 1000;
+      }
     </style>
     <title>Find the Country</title>
   </head>
   <body>
     <div id="map"></div>
     <div id="target-country">&nbsp;</div>
+    <dialog id="result-dialog">
+      <button id="play-again">Play again</button>
+    </dialog>
   </body>
 </html>
