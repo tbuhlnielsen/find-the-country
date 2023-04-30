@@ -10,6 +10,23 @@ body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
+.flex {
+  display: flex;
+}
+.flex-col {
+  flex-direction: column;
+}
+.items-center {
+  align-items: center;
+}
+
+.success {
+  color: #00ff66;
+}
+.error {
+  color: #ff0066;
+}
+
 #target-country {
   background-color: #6600ff;
   color: white;
@@ -27,4 +44,10 @@ body {
   top: 50%;
   transform: translateY(-50%);
   z-index: 1000;
+  border-radius: 5px;
+  text-align: center;
+}
+
+#play-again {
+  margin-top: 20px;
 }

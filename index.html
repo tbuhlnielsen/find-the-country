@@ -41,16 +41,18 @@
     <div id="map"></div>
     <div id="target-country">Loading...</div>
     <dialog id="result-dialog">
-      <div id="guess-correct">
-        <h1>Correct!</h1>
+      <div class="flex flex-col items-center">
+        <div id="guess-correct">
+          <h1 class="success">Correct!</h1>
+        </div>
+        <div id="guess-incorrect">
+          <h1 class="error">Incorrect</h1>
+          <span>You selected</span>
+          <span id="guess"></span>
+          <button id="see-answer">See answer</button>
+        </div>
+        <button id="play-again">Play again</button>
       </div>
-      <div id="guess-incorrect">
-        <h1>Incorrect</h1>
-        <span>You clicked</span>
-        <span id="guess"></span>
-        <button id="see-answer">See answer</button>
-      </div>
-      <button id="play-again">Play again</button>
     </dialog>
   </body>
 </html>
