@@ -15,6 +15,7 @@ const guessIncorrectElement = document.getElementById('guess-incorrect');
 const guessElement = document.getElementById('guess');
 
 const seeAnswerElement = document.getElementById('see-answer');
+const answerElement = document.getElementById('answer');
 
 // INITIALISE MAP OBJECT + POPUP
 
@@ -85,7 +86,8 @@ function resetGameState() {
 function setNewTargetCountry() {
   const target = getTargetCountry();
   gameState.targetCountryName = target;
-  targetCountryElement.textContent = target;
+  targetCountryElement.textContent = 'Where is ' + target + '?';
+  answerElement.textContent = target;
 }
 
 function getTargetCountry() {
