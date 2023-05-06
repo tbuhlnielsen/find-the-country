@@ -1,5 +1,3 @@
-import countryBoundaries from './country-boundaries.json';
-
 // GET DOM ELEMENTS
 
 const targetCountryElement = document.getElementById('target-country');
@@ -53,9 +51,15 @@ let gameState = {
   gameOver: false
 };
 
-const countryData = getCountryData(countryBoundaries);
+let countryData;
 
-setNewTargetCountry();
+fetch('/country-boundaries.geojson')
+  .then(response => response.json())
+  .then(data => {
+    countryData = getCountryData(data);
+    setNewTargetCountry();
+  })
+  .catch(console.error);
 
 function getCountryData(rawData) {
   return {
