@@ -1,29 +1,29 @@
+import L from 'leaflet';
+import type { GeoJSON } from 'leaflet';
+import type { Feature, FeatureCollection } from 'geojson';
+
 // GET DOM ELEMENTS
 
-const targetCountryElement = document.getElementById(
-  'target-country'
-) as HTMLElement;
-const resultDialogElement = document.getElementById(
-  'result-dialog'
-) as HTMLDialogElement;
+function getElementById<T extends HTMLElement = HTMLElement>(id: string) {
+  return document.getElementById(id) as T;
+}
+
+const targetCountryElement = getElementById('target-country');
+const resultDialogElement = getElementById<HTMLDialogElement>('result-dialog');
 
 // https://stackoverflow.com/questions/13698975/click-link-inside-leaflet-popup-and-do-javascript
 const confirmGuessElement = document.createElement('button');
 confirmGuessElement.id = 'confirm-guess';
 confirmGuessElement.textContent = 'Confirm ✅';
 
-const playAgainElement = document.getElementById('play-again') as HTMLElement;
+const playAgainElement = getElementById('play-again');
 
-const guessCorrectElement = document.getElementById(
-  'guess-correct'
-) as HTMLElement;
-const guessIncorrectElement = document.getElementById(
-  'guess-incorrect'
-) as HTMLElement;
-const guessElement = document.getElementById('guess') as HTMLElement;
+const guessCorrectElement = getElementById('guess-correct');
+const guessIncorrectElement = getElementById('guess-incorrect');
+const guessElement = getElementById('guess');
 
-const seeAnswerElement = document.getElementById('see-answer') as HTMLElement;
-const answerElement = document.getElementById('answer') as HTMLElement;
+const seeAnswerElement = getElementById('see-answer');
+const answerElement = getElementById('answer');
 
 // INITIALISE MAP OBJECT + POPUP
 
@@ -55,7 +55,7 @@ const confirmationPopup = L.popup().setContent(confirmGuessElement);
 interface GameState {
   gameOver: boolean;
   guessCorrect?: boolean;
-  selectedMapFeature?: any;
+  selectedMapFeature?: Feature;
   targetCountryName?: string;
 }
 
@@ -64,8 +64,8 @@ let gameState: GameState = {
 };
 
 interface CountryData {
-  rawData: any;
-  boundaries: any;
+  rawData: FeatureCollection;
+  boundaries: GeoJSON;
   names: string[];
 }
 
