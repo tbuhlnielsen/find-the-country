@@ -1,34 +1,40 @@
 // GET DOM ELEMENTS
 
-const targetCountryElement = document.getElementById('target-country');
-const resultDialogElement = document.getElementById('result-dialog');
+const targetCountryElement = document.getElementById(
+  'target-country'
+) as HTMLElement;
+const resultDialogElement = document.getElementById(
+  'result-dialog'
+) as HTMLDialogElement;
 
 // https://stackoverflow.com/questions/13698975/click-link-inside-leaflet-popup-and-do-javascript
 const confirmGuessElement = document.createElement('button');
 confirmGuessElement.id = 'confirm-guess';
 confirmGuessElement.textContent = 'Confirm ✅';
 
-const playAgainElement = document.getElementById('play-again');
+const playAgainElement = document.getElementById('play-again') as HTMLElement;
 
-const guessCorrectElement = document.getElementById('guess-correct');
-const guessIncorrectElement = document.getElementById('guess-incorrect');
-const guessElement = document.getElementById('guess');
+const guessCorrectElement = document.getElementById(
+  'guess-correct'
+) as HTMLElement;
+const guessIncorrectElement = document.getElementById(
+  'guess-incorrect'
+) as HTMLElement;
+const guessElement = document.getElementById('guess') as HTMLElement;
 
-const seeAnswerElement = document.getElementById('see-answer');
-const answerElement = document.getElementById('answer');
+const seeAnswerElement = document.getElementById('see-answer') as HTMLElement;
+const answerElement = document.getElementById('answer') as HTMLElement;
 
 // INITIALISE MAP OBJECT + POPUP
 
-const MAP_OPTIONS = {
+const map = L.map('map', {
   center: [0, 0],
   maxBounds: [
     [-70, -179],
     [85, 179]
   ],
   zoom: 2
-};
-
-const map = L.map('map', MAP_OPTIONS);
+});
 
 L.tileLayer(
   'https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}{r}.png',
@@ -38,7 +44,6 @@ L.tileLayer(
     subdomains: 'abcd',
     maxZoom: 10,
     minZoom: 2,
-    bounds: MAP_OPTIONS.maxBounds,
     noWrap: true
   }
 ).addTo(map);
@@ -47,11 +52,24 @@ const confirmationPopup = L.popup().setContent(confirmGuessElement);
 
 // INITIALISE COUNTRY DATA + GAME STATE
 
-let gameState = {
+interface GameState {
+  gameOver: boolean;
+  guessCorrect?: boolean;
+  selectedMapFeature?: any;
+  targetCountryName?: string;
+}
+
+let gameState: GameState = {
   gameOver: false
 };
 
-let countryData;
+interface CountryData {
+  rawData: any;
+  boundaries: any;
+  names: string[];
+}
+
+let countryData: CountryData;
 
 fetch('/country-boundaries.geojson')
   .then(response => response.json())
@@ -269,7 +287,7 @@ function onPlayAgain() {
   resultDialogElement.close();
   resetGameState();
   countryData.boundaries.resetStyle();
-  map.fitBounds(MAP_OPTIONS.maxBounds);
+  map.fitWorld();
 }
 
 // HELPER FUNCTIONS
