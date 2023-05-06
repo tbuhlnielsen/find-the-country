@@ -1,1 +1,9 @@
+# Misc.
 .DS_Store
+
+# Dependencies
+node_modules/
+
+# Build
+dist/
+.parcel-cache/
