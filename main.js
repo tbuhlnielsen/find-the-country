@@ -1,3 +1,5 @@
+import countryBoundaries from './country-boundaries.json';
+
 // GET DOM ELEMENTS
 
 const targetCountryElement = document.getElementById('target-country');
@@ -47,20 +49,13 @@ const confirmationPopup = L.popup().setContent(confirmGuessElement);
 
 // INITIALISE COUNTRY DATA + GAME STATE
 
-let countryData;
-
 let gameState = {
-  guessCorrect: false,
   gameOver: false
 };
 
-fetch('./country-boundaries.geojson')
-  .then(response => response.json())
-  .then(data => {
-    countryData = getCountryData(data);
-    resetGameState();
-  })
-  .catch(console.error);
+const countryData = getCountryData(countryBoundaries);
+
+setNewTargetCountry();
 
 function getCountryData(rawData) {
   return {
