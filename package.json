@@ -4,8 +4,8 @@
   "description": "A geography game",
   "source": "index.html",
   "scripts": {
-    "build": "npx parcel",
-    "start": "npx parcel build"
+    "build": "npx parcel build",
+    "start": "npx parcel"
   },
   "author": "tbuhlnielsen",
   "devDependencies": {
