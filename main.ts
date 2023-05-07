@@ -233,8 +233,9 @@ function isPointInsideCountry(point: LatLng, feature: CountryFeature) {
       );
 
     default:
-      console.error('Unexpected feature geometry type', feature.geometry.type);
-      return false;
+      throw new Error(
+        'Unexpected feature geometry type ' + feature.geometry.type
+      );
   }
 }
 
