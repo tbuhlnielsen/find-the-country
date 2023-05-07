@@ -1,4 +1,4 @@
-import L, { LatLng } from 'leaflet';
+import L from 'leaflet';
 import type { FeatureCollection, Geometry } from 'geojson';
 import {
   closeResultDialog,
@@ -11,8 +11,15 @@ import {
 } from './dom';
 import { getCountryStyle } from './map-styles';
 import type { CountryGeoJsonProperties, GlobalState } from './types';
-import { randomElement, isPointInsideCountry, isCountrySelected } from './util';
+import { isCountrySelected } from './util';
 import 'leaflet/dist/leaflet.css';
+import {
+  resetGameState,
+  setHoveredCountry,
+  setSelectedCountry,
+  setGameOver,
+  initialiseState
+} from './state';
 
 // INITIALISE MAP OBJECT + POPUP
 
@@ -43,73 +50,6 @@ const confirmationPopup = L.popup().setContent(confirmGuessButton);
 
 let globalState: GlobalState;
 
-function setCountryData(
-  state: GlobalState,
-  rawData: FeatureCollection<Geometry, CountryGeoJsonProperties>
-) {
-  return {
-    ...state,
-    countries: {
-      rawData
-    }
-  };
-}
-
-function resetGameState(state: GlobalState) {
-  return {
-    ...state,
-    game: {
-      over: false,
-      // TODO: choose target deterministically?
-      targetCountry: randomElement(state.countries.rawData.features)
-    }
-  };
-}
-
-function setHoveredCountry(state: GlobalState, point?: LatLng) {
-  if (state.game.over) {
-    return state;
-  }
-  const hoveredCountry = point
-    ? state.countries.rawData.features.find(country =>
-        isPointInsideCountry(point, country)
-      )
-    : undefined;
-  return {
-    ...state,
-    game: {
-      ...state.game,
-      hoveredCountry
-    }
-  };
-}
-
-function setSelectedCountry(state: GlobalState, point: LatLng) {
-  if (state.game.over) {
-    return state;
-  }
-  const selectedCountry = state.countries.rawData.features.find(country =>
-    isPointInsideCountry(point, country)
-  );
-  return {
-    ...state,
-    game: {
-      ...state.game,
-      selectedCountry
-    }
-  };
-}
-
-function setGameOver(state: GlobalState) {
-  return {
-    ...state,
-    game: {
-      ...state.game,
-      over: true
-    }
-  };
-}
-
 fetch('/country-boundaries.geojson')
   .then(response => response.json())
   .then((data: FeatureCollection<Geometry, CountryGeoJsonProperties>) => {
@@ -123,8 +63,7 @@ fetch('/country-boundaries.geojson')
 
     geoJsonLayer.addData(processedData);
 
-    globalState = setCountryData(globalState, processedData);
-    globalState = resetGameState(globalState);
+    globalState = initialiseState(globalState, processedData);
 
     setTargetCountryName(globalState.game.targetCountry.properties.name);
     // Only play the animation when the target is set to avoid
