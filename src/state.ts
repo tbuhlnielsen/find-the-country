@@ -1,6 +1,10 @@
 import type { LatLng } from 'leaflet';
 import type { FeatureCollection, Geometry } from 'geojson';
-import type { GlobalState, CountryGeoJsonProperties } from './types';
+import type {
+  GlobalState,
+  CountryGeoJsonProperties,
+  CountryFeature
+} from './types';
 import { randomElement, isPointInsideCountry } from './util';
 
 export function initialiseState(
@@ -34,20 +38,18 @@ export function resetGameState(state: GlobalState) {
   };
 }
 
-export function setHoveredCountry(state: GlobalState, point?: LatLng) {
+export function setHoveredCountry(
+  state: GlobalState,
+  feature?: CountryFeature
+) {
   if (state.game.over) {
     return state;
   }
-  const hoveredCountry = point
-    ? state.countries.rawData.features.find(country =>
-        isPointInsideCountry(point, country)
-      )
-    : undefined;
   return {
     ...state,
     game: {
       ...state.game,
-      hoveredCountry
+      hoveredCountry: feature
     }
   };
 }

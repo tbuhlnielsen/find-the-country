@@ -75,15 +75,14 @@ fetch('/country-boundaries.geojson')
 // EVENTS
 
 geoJsonLayer.on('mouseover', e => {
-  globalState = setHoveredCountry(globalState, e.latlng);
-
+  const layer = e.propagatedFrom;
+  globalState = setHoveredCountry(globalState, layer.feature);
   if (
     !(
       globalState.game.over ||
-      isCountrySelected(e.propagatedFrom.feature, globalState.game)
+      isCountrySelected(layer.feature, globalState.game)
     )
   ) {
-    const layer = e.propagatedFrom;
     layer.setStyle(getCountryStyle(globalState.game)(layer.feature));
     layer.bringToFront();
   }
@@ -91,14 +90,14 @@ geoJsonLayer.on('mouseover', e => {
 
 geoJsonLayer.on('mouseout', e => {
   globalState = setHoveredCountry(globalState, undefined);
-
+  const layer = e.propagatedFrom;
   if (
     !(
       globalState.game.over ||
-      isCountrySelected(e.propagatedFrom.feature, globalState.game)
+      isCountrySelected(layer.feature, globalState.game)
     )
   ) {
-    geoJsonLayer.resetStyle(e.propagatedFrom);
+    geoJsonLayer.resetStyle(layer);
   }
 });
 
