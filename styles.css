@@ -1,3 +1,15 @@
+:root {
+  --green: #17c01a;
+  --purple: #6600ff;
+  --red: #e01818;
+  --light-blue: #0066ff;
+  --light-green: #00ff66;
+  --light-red: #ff0066;
+
+  --spacing-md: 8px;
+  --spacing-lg: 16px;
+}
+
 html,
 body,
 #map {
@@ -14,6 +26,16 @@ h1 {
   margin: 0;
 }
 
+button {
+  border: none;
+  cursor: pointer;
+  padding: var(--spacing-md) var(--spacing-lg);
+  transition: transform 0.05s;
+}
+button:active {
+  transform: scale(0.98);
+}
+
 .flex {
   display: flex;
 }
@@ -23,19 +45,29 @@ h1 {
 .items-center {
   align-items: center;
 }
+.gap-lg {
+  gap: var(--spacing-lg);
+}
 
 .success {
-  color: #05d647;
+  color: var(--green);
 }
 .error {
-  color: #e01818;
+  color: var(--red);
+}
+
+.hidden {
+  display: none;
+}
+
+.border-md {
+  border-radius: 5px;
 }
 
 #target-country {
-  background-color: #6600ff;
+  background-color: var(--purple);
   color: white;
-  border-radius: 5px;
-  padding: 8px 16px;
+  padding: var(--spacing-md) var(--spacing-lg);
   position: absolute;
   bottom: 35px;
   left: 50%;
@@ -48,7 +80,7 @@ h1 {
   content: ' ';
   width: 10px;
   height: 10px;
-  background-color: #6600ff;
+  background-color: var(--purple);
   position: absolute;
   bottom: -5px;
   left: 50%;
@@ -76,12 +108,15 @@ h1 {
   position: absolute;
   top: 25px;
   z-index: 1000;
-  border-radius: 5px;
   text-align: center;
 }
 
-#guess-correct,
-#guess-incorrect,
-#guess-incorrect h1 {
-  margin-bottom: 20px;
+#see-answer {
+  background-color: var(--purple);
+  color: white;
+}
+
+#play-again {
+  background-color: var(--green);
+  color: white;
 }

@@ -2,8 +2,21 @@
   "name": "find-the-country",
   "version": "1.0.0",
   "description": "A geography game",
+  "source": "index.html",
+  "type": "module",
   "scripts": {
-    "serve": "npx serve"
+    "build": "npx parcel build",
+    "start": "npx parcel"
   },
-  "author": "tbuhlnielsen"
+  "author": "tbuhlnielsen",
+  "devDependencies": {
+    "@parcel/packager-raw-url": "^2.8.3",
+    "@parcel/transformer-webmanifest": "^2.8.3",
+    "@types/leaflet": "^1.9.3",
+    "parcel": "^2.8.3",
+    "typescript": "^5.0.4"
+  },
+  "dependencies": {
+    "leaflet": "^1.9.3"
+  }
 }

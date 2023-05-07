@@ -21,40 +21,22 @@
       sizes="16x16"
       href="./favicon/favicon-16x16.png"
     />
-    <link rel="manifest" href="/site.webmanifest" />
-    <link
-      rel="stylesheet"
-      href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"
-      integrity="sha256-kLaT2GOSpHechhsozzB+flnD+zUyjE2LlfWPgU04xyI="
-      crossorigin=""
-    />
+    <link rel="manifest" href="./site.webmanifest" />
     <link rel="stylesheet" href="./styles.css" />
-    <script
-      src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"
-      integrity="sha256-WBkoXOwTeyKclOHuWtc+i2uENFpDZ9YPdf5Hf+D7ewM="
-      crossorigin=""
-    ></script>
-    <script src="./main.js" defer></script>
+    <script type="module" src="./src/main.ts"></script>
     <title>Find the Country</title>
   </head>
   <body>
     <div id="map"></div>
-    <div id="target-country">Loading...</div>
-    <dialog id="result-dialog">
-      <div class="flex flex-col items-center">
-        <div id="guess-correct">
-          <h1 class="success">Correct!</h1>
+    <div id="target-country" class="border-md">Loading...</div>
+    <dialog id="result-dialog" class="border-md">
+      <div class="flex flex-col items-center gap-lg">
+        <h1 id="result-title"></h1>
+        <span id="result-detail" class="hidden"></span>
+        <div id="actions">
+          <button id="see-answer" class="hidden border-md">See answer</button>
+          <button id="play-again" class="border-md">Play again</button>
         </div>
-        <div id="guess-incorrect">
-          <h1 class="error">Incorrect</h1>
-          <span>You selected</span>
-          <span id="guess"></span>
-          <button id="see-answer">
-            <span>Go to</span>
-            <span id="answer"></span>
-          </button>
-        </div>
-        <button id="play-again">Play again</button>
       </div>
     </dialog>
   </body>
