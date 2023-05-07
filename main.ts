@@ -267,7 +267,9 @@ confirmGuessElement.addEventListener('click', () => {
       updateGuessIncorrectUI(gameState);
     }
     gameState.gameOver = true;
-    countriesGeoJson?.setStyle(feature => getCountryStyle(gameState, feature)); // TODO: use helper
+    if (countriesGeoJson) {
+      setStyle(countriesGeoJson, gameState);
+    }
     resultDialogElement.show();
   }
 });
