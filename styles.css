@@ -1,3 +1,12 @@
+:root {
+  --green: #05d647;
+  --purple: #6600ff;
+  --red: #e01818;
+  --light-blue: #0066ff;
+  --light-green: #00ff66;
+  --light-red: #ff0066;
+}
+
 html,
 body,
 #map {
@@ -23,12 +32,15 @@ h1 {
 .items-center {
   align-items: center;
 }
+.gap-md {
+  gap: 10px;
+}
 
 .success {
-  color: #05d647;
+  color: var(--green);
 }
 .error {
-  color: #e01818;
+  color: var(--red);
 }
 
 .hidden {
@@ -36,7 +48,7 @@ h1 {
 }
 
 #target-country {
-  background-color: #6600ff;
+  background-color: var(--purple);
   color: white;
   border-radius: 5px;
   padding: 8px 16px;
@@ -52,7 +64,7 @@ h1 {
   content: ' ';
   width: 10px;
   height: 10px;
-  background-color: #6600ff;
+  background-color: var(--purple);
   position: absolute;
   bottom: -5px;
   left: 50%;

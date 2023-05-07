@@ -102,11 +102,12 @@ function setStyle(
   countriesGeoJson.setStyle(feature => getCountryStyle(gameState, feature));
 }
 
-const COLOUR_PALETTE = {
-  success: '#00ff66',
-  error: '#ff0066',
-  highlight: '#6600ff'
-};
+function getCssVariable(
+  cssVarName: string,
+  element = document.documentElement
+) {
+  return getComputedStyle(element).getPropertyValue(cssVarName);
+}
 
 function getCountryStyle(gameState: GameState, country?: CountryFeature) {
   if (!country) {
@@ -122,15 +123,15 @@ function getCountryStyle(gameState: GameState, country?: CountryFeature) {
 function getCountryColor(country: CountryFeature, gameState: GameState) {
   if (gameState.gameOver) {
     if (isCountryCorrect(country, gameState)) {
-      return COLOUR_PALETTE.success;
+      return getCssVariable('--light-green');
     }
     if (isCountrySelected(country, gameState)) {
-      return COLOUR_PALETTE.error;
+      return getCssVariable('--light-red');
     }
     return 'transparent';
   }
   if (isCountrySelected(country, gameState)) {
-    return COLOUR_PALETTE.highlight;
+    return getCssVariable('--purple');
   }
   return 'transparent';
 }
@@ -151,8 +152,8 @@ function onMouseOverFeature(e: LeafletMouseEvent) {
   }
   const layer = e.target;
   layer.setStyle({
-    color: '#0066ff', // TODO: add to colour palette
-    fillColor: '#0066ff',
+    color: getCssVariable('--light-blue'),
+    fillColor: getCssVariable('--light-blue'),
     fillOpacity: 0.5,
     weight: 2
   });
