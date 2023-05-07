@@ -53,18 +53,8 @@ let globalState: GlobalState;
 fetch('/country-boundaries.geojson')
   .then(response => response.json())
   .then((data: FeatureCollection<Geometry, CountryGeoJsonProperties>) => {
-    // TODO: process data before deploying.
-    const processedData = {
-      ...data,
-      features: data.features.filter(
-        feature => feature.properties.status === 'Member State' // ignore disputed territories
-      )
-    };
-
-    geoJsonLayer.addData(processedData);
-
-    globalState = initialiseState(globalState, processedData);
-
+    geoJsonLayer.addData(data);
+    globalState = initialiseState(globalState, data);
     setTargetCountryName(globalState.game.targetCountry.properties.name);
     // Only play the animation when the target is set to avoid
     // a weird flicker while the data is loading.

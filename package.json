@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "A geography game",
   "source": "index.html",
+  "type": "module",
   "scripts": {
     "build": "npx parcel build",
     "start": "npx parcel"

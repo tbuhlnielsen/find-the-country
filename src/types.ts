@@ -9,7 +9,6 @@ export interface GlobalState {
 
 export interface CountryGeoJsonProperties {
   name: string;
-  status: string;
 }
 
 export interface GameState {
