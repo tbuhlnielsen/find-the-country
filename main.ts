@@ -30,10 +30,6 @@ const answerElement = getElementById('answer');
 
 const map = L.map('map', {
   center: [0, 0],
-  maxBounds: [
-    [-70, -179], // south-west
-    [85, 179] // north-east
-  ],
   zoom: 2
 });
 
