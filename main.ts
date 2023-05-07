@@ -111,7 +111,6 @@ function updateTargetCountryUI(name: string) {
   // Only play the animation when the target is set to avoid
   // a weird flicker while the data is loading.
   targetCountryElement.style.animationPlayState = 'running';
-  answerElement.textContent = name;
 }
 
 // MAP STYLES
@@ -263,27 +262,28 @@ confirmGuessElement.addEventListener('click', () => {
   confirmationPopup.close();
   if (gameState.selectedCountry) {
     if (isCountryCorrect(gameState.selectedCountry, gameState)) {
-      setGuessCorrectElementVisible();
+      updateGuessCorrectUI();
     } else {
-      setGuessIncorrectElementVisible(
-        gameState.selectedCountry.properties.name
-      );
+      updateGuessIncorrectUI(gameState);
     }
     gameState.gameOver = true;
-    countriesGeoJson?.setStyle(feature => getCountryStyle(gameState, feature));
+    countriesGeoJson?.setStyle(feature => getCountryStyle(gameState, feature)); // TODO: use helper
     resultDialogElement.show();
   }
 });
 
-function setGuessCorrectElementVisible() {
+function updateGuessCorrectUI() {
   guessCorrectElement.style.display = 'block';
   guessIncorrectElement.style.display = 'none';
 }
 
-function setGuessIncorrectElementVisible(selectedCountryName: string) {
+function updateGuessIncorrectUI(gameState: GameState) {
   guessCorrectElement.style.display = 'none';
   guessIncorrectElement.style.display = 'block';
-  guessElement.textContent = selectedCountryName;
+  if (gameState.selectedCountry && gameState.targetCountry) {
+    guessElement.textContent = gameState.selectedCountry.properties.name;
+    answerElement.textContent = gameState.targetCountry.properties.name;
+  }
 }
 
 seeAnswerElement.addEventListener('click', () => {
