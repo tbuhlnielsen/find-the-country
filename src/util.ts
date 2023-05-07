@@ -65,3 +65,13 @@ export function isCountrySelected(
   }
   return false;
 }
+
+export function isCountryHovered(
+  country: CountryFeature,
+  gameState: GameState
+) {
+  if (gameState.hoveredCountry) {
+    return country.properties.name === gameState.hoveredCountry.properties.name;
+  }
+  return false;
+}

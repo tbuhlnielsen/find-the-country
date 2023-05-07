@@ -1,5 +1,4 @@
-import L from 'leaflet';
-import type { GeoJSON, Layer, LeafletMouseEvent, Map } from 'leaflet';
+import L, { LatLng } from 'leaflet';
 import type { FeatureCollection, Geometry } from 'geojson';
 import {
   closeResultDialog,
@@ -10,13 +9,9 @@ import {
   showResultDialog,
   startTargetCountryAnimation
 } from './dom';
-import { resetCountryStyles, setHoverCountryStyle } from './map-styles';
-import type {
-  CountryFeature,
-  CountryGeoJsonProperties,
-  GameState
-} from './types';
-import { randomElement, isCountrySelected, isPointInsideCountry } from './util';
+import { getCountryStyle } from './map-styles';
+import type { CountryGeoJsonProperties, GlobalState } from './types';
+import { randomElement, isPointInsideCountry, isCountrySelected } from './util';
 import 'leaflet/dist/leaflet.css';
 
 // INITIALISE MAP OBJECT + POPUP
@@ -38,16 +33,82 @@ L.tileLayer(
   }
 ).addTo(map);
 
+const geoJsonLayer = L.geoJSON(undefined, {
+  style: { color: 'transparent', fillColor: 'transparent' }
+}).addTo(map);
+
 const confirmationPopup = L.popup().setContent(confirmGuessButton);
 
-// INITIALISE COUNTRY DATA + GAME STATE
+// INITIALISE STATE
 
-let gameState: GameState = {
-  gameOver: false
-};
+let globalState: GlobalState;
 
-let countriesGeoJson: GeoJSON<CountryGeoJsonProperties> | undefined;
-let countries: CountryFeature[] | undefined;
+function setCountryData(
+  state: GlobalState,
+  rawData: FeatureCollection<Geometry, CountryGeoJsonProperties>
+) {
+  return {
+    ...state,
+    countries: {
+      rawData
+    }
+  };
+}
+
+function resetGameState(state: GlobalState) {
+  return {
+    ...state,
+    game: {
+      over: false,
+      // TODO: choose target deterministically?
+      targetCountry: randomElement(state.countries.rawData.features)
+    }
+  };
+}
+
+function setHoveredCountry(state: GlobalState, point?: LatLng) {
+  if (state.game.over) {
+    return state;
+  }
+  const hoveredCountry = point
+    ? state.countries.rawData.features.find(country =>
+        isPointInsideCountry(point, country)
+      )
+    : undefined;
+  return {
+    ...state,
+    game: {
+      ...state.game,
+      hoveredCountry
+    }
+  };
+}
+
+function setSelectedCountry(state: GlobalState, point: LatLng) {
+  if (state.game.over) {
+    return state;
+  }
+  const selectedCountry = state.countries.rawData.features.find(country =>
+    isPointInsideCountry(point, country)
+  );
+  return {
+    ...state,
+    game: {
+      ...state.game,
+      selectedCountry
+    }
+  };
+}
+
+function setGameOver(state: GlobalState) {
+  return {
+    ...state,
+    game: {
+      ...state.game,
+      over: true
+    }
+  };
+}
 
 fetch('/country-boundaries.geojson')
   .then(response => response.json())
@@ -59,97 +120,81 @@ fetch('/country-boundaries.geojson')
         feature => feature.properties.status === 'Member State' // ignore disputed territories
       )
     };
-    countriesGeoJson = L.geoJson(processedData, {
-      onEachFeature,
-      style: { color: 'transparent', fillColor: 'transparent' }
-    }).addTo(map);
-    countries = processedData.features;
-    resetGame(map, countries, countriesGeoJson, true);
+
+    geoJsonLayer.addData(processedData);
+
+    globalState = setCountryData(globalState, processedData);
+    globalState = resetGameState(globalState);
+
+    setTargetCountryName(globalState.game.targetCountry.properties.name);
     // Only play the animation when the target is set to avoid
     // a weird flicker while the data is loading.
     startTargetCountryAnimation();
   })
   .catch(console.error);
 
-function resetGame(
-  map: Map,
-  countries: CountryFeature[],
-  countriesGeoJson: GeoJSON<CountryGeoJsonProperties>,
-  init = false
-) {
-  const targetCountry = randomElement(countries);
-  gameState = {
-    gameOver: false,
-    targetCountry
-  };
-  if (!init) {
-    resetCountryStyles(countriesGeoJson, gameState);
-    map.fitWorld();
-  }
-  setTargetCountryName(targetCountry.properties.name);
-}
-
 // EVENTS
 
-function onEachFeature(_: CountryFeature, layer: Layer) {
-  layer.on({
-    mouseover: onMouseOverFeature,
-    mouseout: onMouseOutFeature,
-    click: zoomToFeature
-  });
-}
+geoJsonLayer.on('mouseover', e => {
+  globalState = setHoveredCountry(globalState, e.latlng);
 
-function onMouseOverFeature(e: LeafletMouseEvent) {
-  if (gameState.gameOver || isCountrySelected(e.target.feature, gameState)) {
-    return;
+  if (
+    !(
+      globalState.game.over ||
+      isCountrySelected(e.propagatedFrom.feature, globalState.game)
+    )
+  ) {
+    const layer = e.propagatedFrom;
+    layer.setStyle(getCountryStyle(globalState.game)(layer.feature));
+    layer.bringToFront();
   }
-  const layer = e.target;
-  setHoverCountryStyle(layer);
-  layer.bringToFront();
-}
+});
 
-function onMouseOutFeature(e: LeafletMouseEvent) {
-  if (gameState.gameOver || isCountrySelected(e.target.feature, gameState)) {
-    return;
+geoJsonLayer.on('mouseout', e => {
+  globalState = setHoveredCountry(globalState, undefined);
+
+  if (
+    !(
+      globalState.game.over ||
+      isCountrySelected(e.propagatedFrom.feature, globalState.game)
+    )
+  ) {
+    geoJsonLayer.resetStyle(e.propagatedFrom);
   }
-  countriesGeoJson?.resetStyle(e.target);
-}
+});
 
-function zoomToFeature(e: LeafletMouseEvent) {
-  map.fitBounds(e.target.getBounds());
-}
+geoJsonLayer.on('click', e => {
+  map.fitBounds(e.propagatedFrom.getBounds());
+});
 
 map.on('click', e => {
-  if (gameState.gameOver || !countries) {
-    return;
-  }
-  gameState.selectedCountry = countries.find(feature =>
-    isPointInsideCountry(e.latlng, feature)
-  );
-  if (countriesGeoJson && gameState.selectedCountry) {
-    resetCountryStyles(countriesGeoJson, gameState);
+  globalState = setSelectedCountry(globalState, e.latlng);
+
+  geoJsonLayer.setStyle(getCountryStyle(globalState.game));
+  if (globalState.game.selectedCountry) {
     confirmationPopup.setLatLng(e.latlng).openOn(map);
   }
 });
 
 confirmGuessButton.addEventListener('click', () => {
+  globalState = setGameOver(globalState);
+
   confirmationPopup.close();
-  gameState.gameOver = true;
-  if (countriesGeoJson) {
-    resetCountryStyles(countriesGeoJson, gameState);
-  }
-  showResultDialog(gameState);
+  geoJsonLayer.setStyle(getCountryStyle(globalState.game));
+  showResultDialog(globalState.game);
 });
 
 seeAnswerButton.addEventListener('click', () => {
-  if (gameState.targetCountry) {
-    map.flyToBounds(L.geoJson(gameState.targetCountry).getBounds());
+  if (globalState.game.targetCountry) {
+    map.flyToBounds(L.geoJson(globalState.game.targetCountry).getBounds());
   }
 });
 
 playAgainButton.addEventListener('click', () => {
+  globalState = resetGameState(globalState);
+
   closeResultDialog();
-  if (countries && countriesGeoJson) {
-    resetGame(map, countries, countriesGeoJson);
-  }
+  geoJsonLayer.resetStyle();
+  map.fitWorld();
+  setTargetCountryName(globalState.game.targetCountry.properties.name);
 });

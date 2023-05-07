@@ -1,14 +1,22 @@
-import type { Feature, Geometry } from 'geojson';
+import type { Feature, FeatureCollection, Geometry } from 'geojson';
+
+export interface GlobalState {
+  countries: {
+    rawData: FeatureCollection<Geometry, CountryGeoJsonProperties>;
+  };
+  game: GameState;
+}
 
 export interface CountryGeoJsonProperties {
   name: string;
   status: string;
 }
 
-export type CountryFeature = Feature<Geometry, CountryGeoJsonProperties>;
-
 export interface GameState {
-  gameOver: boolean;
+  over: boolean;
+  hoveredCountry?: CountryFeature;
   selectedCountry?: CountryFeature;
-  targetCountry?: CountryFeature;
+  targetCountry: CountryFeature;
 }
+
+export type CountryFeature = Feature<Geometry, CountryGeoJsonProperties>;
