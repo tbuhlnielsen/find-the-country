@@ -31,6 +31,10 @@ h1 {
   color: #e01818;
 }
 
+.hidden {
+  display: none;
+}
+
 #target-country {
   background-color: #6600ff;
   color: white;
@@ -78,10 +82,4 @@ h1 {
   z-index: 1000;
   border-radius: 5px;
   text-align: center;
-}
-
-#guess-correct,
-#guess-incorrect,
-#guess-incorrect h1 {
-  margin-bottom: 20px;
 }
