@@ -10,17 +10,13 @@ import {
   showResultDialog,
   startTargetCountryAnimation
 } from './dom';
+import { resetCountryStyles, setHoverCountryStyle } from './map-styles';
 import type {
   CountryFeature,
   CountryGeoJsonProperties,
   GameState
 } from './types';
-import {
-  randomElement,
-  isCountryCorrect,
-  isCountrySelected,
-  isPointInsideCountry
-} from './util';
+import { randomElement, isCountrySelected, isPointInsideCountry } from './util';
 import 'leaflet/dist/leaflet.css';
 
 // INITIALISE MAP OBJECT + POPUP
@@ -87,53 +83,10 @@ function resetGame(
     targetCountry
   };
   if (!init) {
-    setStyle(countriesGeoJson, gameState);
+    resetCountryStyles(countriesGeoJson, gameState);
     map.fitWorld();
   }
   setTargetCountryName(targetCountry.properties.name);
-}
-
-// MAP STYLES
-
-function setStyle(
-  countriesGeoJson: GeoJSON<CountryGeoJsonProperties>,
-  gameState: GameState
-) {
-  countriesGeoJson.setStyle(feature => getCountryStyle(gameState, feature));
-}
-
-function getCssVariable(
-  cssVarName: string,
-  element = document.documentElement
-) {
-  return getComputedStyle(element).getPropertyValue(cssVarName);
-}
-
-function getCountryStyle(gameState: GameState, country?: CountryFeature) {
-  if (!country) {
-    return {};
-  }
-  const colour = getCountryColor(country, gameState);
-  return {
-    color: colour,
-    fillColor: colour
-  };
-}
-
-function getCountryColor(country: CountryFeature, gameState: GameState) {
-  if (gameState.gameOver) {
-    if (isCountryCorrect(country, gameState)) {
-      return getCssVariable('--light-green');
-    }
-    if (isCountrySelected(country, gameState)) {
-      return getCssVariable('--light-red');
-    }
-    return 'transparent';
-  }
-  if (isCountrySelected(country, gameState)) {
-    return getCssVariable('--purple');
-  }
-  return 'transparent';
 }
 
 // EVENTS
@@ -151,12 +104,7 @@ function onMouseOverFeature(e: LeafletMouseEvent) {
     return;
   }
   const layer = e.target;
-  layer.setStyle({
-    color: getCssVariable('--light-blue'),
-    fillColor: getCssVariable('--light-blue'),
-    fillOpacity: 0.5,
-    weight: 2
-  });
+  setHoverCountryStyle(layer);
   layer.bringToFront();
 }
 
@@ -179,7 +127,7 @@ map.on('click', e => {
     isPointInsideCountry(e.latlng, feature)
   );
   if (countriesGeoJson && gameState.selectedCountry) {
-    setStyle(countriesGeoJson, gameState);
+    resetCountryStyles(countriesGeoJson, gameState);
     confirmationPopup.setLatLng(e.latlng).openOn(map);
   }
 });
@@ -188,7 +136,7 @@ confirmGuessButton.addEventListener('click', () => {
   confirmationPopup.close();
   gameState.gameOver = true;
   if (countriesGeoJson) {
-    setStyle(countriesGeoJson, gameState);
+    resetCountryStyles(countriesGeoJson, gameState);
   }
   showResultDialog(gameState);
 });
