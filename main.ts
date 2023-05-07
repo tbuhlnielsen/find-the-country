@@ -1,6 +1,7 @@
 import L from 'leaflet';
-import type { GeoJSON } from 'leaflet';
-import type { Feature, FeatureCollection } from 'geojson';
+import type { GeoJSON, LatLng, Layer, LeafletMouseEvent, Map } from 'leaflet';
+import type { Feature, FeatureCollection, Geometry, Polygon } from 'geojson';
+import 'leaflet/dist/leaflet.css';
 
 // GET DOM ELEMENTS
 
@@ -30,8 +31,8 @@ const answerElement = getElementById('answer');
 const map = L.map('map', {
   center: [0, 0],
   maxBounds: [
-    [-70, -179],
-    [85, 179]
+    [-70, -179], // south-west
+    [85, 179] // north-east
   ],
   zoom: 2
 });
@@ -52,70 +53,79 @@ const confirmationPopup = L.popup().setContent(confirmGuessElement);
 
 // INITIALISE COUNTRY DATA + GAME STATE
 
+interface CountryGeoJsonProperties {
+  name: string;
+  status: string;
+}
+
+type CountryFeature = Feature<Geometry, CountryGeoJsonProperties>;
+
 interface GameState {
   gameOver: boolean;
-  guessCorrect?: boolean;
-  selectedMapFeature?: Feature;
-  targetCountryName?: string;
+  selectedCountry?: CountryFeature;
+  targetCountry?: CountryFeature;
 }
 
 let gameState: GameState = {
   gameOver: false
 };
 
-interface CountryData {
-  rawData: FeatureCollection;
-  boundaries: GeoJSON;
-  names: string[];
-}
-
-let countryData: CountryData;
+let countriesGeoJson: GeoJSON<CountryGeoJsonProperties> | undefined;
+let countries: CountryFeature[] | undefined;
 
 fetch('/country-boundaries.geojson')
   .then(response => response.json())
-  .then(data => {
-    countryData = getCountryData(data);
-    setNewTargetCountry();
+  .then((data: FeatureCollection<Geometry, CountryGeoJsonProperties>) => {
+    // TODO: process data before deploying.
+    const processedData = {
+      ...data,
+      features: data.features.filter(
+        feature => feature.properties.status === 'Member State' // ignore disputed territories
+      )
+    };
+    countriesGeoJson = L.geoJson(processedData, {
+      onEachFeature,
+      style: { color: 'transparent', fillColor: 'transparent' }
+    }).addTo(map);
+    countries = processedData.features;
+    resetGame(map, countries, countriesGeoJson, true);
   })
   .catch(console.error);
 
-function getCountryData(rawData) {
-  return {
-    rawData,
-    boundaries: L.geoJson(rawData, {
-      onEachFeature,
-      style: getMapFeatureStyle
-    }).addTo(map),
-    names: rawData.features
-      .filter(isCountry)
-      .map(feature => feature.properties.name)
-  };
-}
-
-function resetGameState() {
+function resetGame(
+  map: Map,
+  countries: CountryFeature[],
+  countriesGeoJson: GeoJSON<CountryGeoJsonProperties>,
+  init = false
+) {
+  const targetCountry = randomElement(countries);
   gameState = {
-    guessCorrect: false,
-    gameOver: false
+    gameOver: false,
+    targetCountry
   };
-  setNewTargetCountry();
+  if (!init) {
+    setStyle(countriesGeoJson, gameState);
+    map.fitWorld();
+  }
+  updateTargetCountryUI(targetCountry.properties.name);
 }
 
-function setNewTargetCountry() {
-  const target = getTargetCountry();
-  gameState.targetCountryName = target;
-  targetCountryElement.textContent = `Where is ${target}?`;
+function updateTargetCountryUI(name: string) {
+  targetCountryElement.textContent = `Where is ${name}?`;
   // Only play the animation when the target is set to avoid
   // a weird flicker while the data is loading.
   targetCountryElement.style.animationPlayState = 'running';
-  answerElement.textContent = target;
-}
-
-function getTargetCountry() {
-  const names = countryData.names;
-  return names[Math.floor(names.length * Math.random())];
+  answerElement.textContent = name;
 }
 
 // MAP STYLES
+
+function setStyle(
+  countriesGeoJson: GeoJSON<CountryGeoJsonProperties>,
+  gameState: GameState
+) {
+  countriesGeoJson.setStyle(feature => getCountryStyle(gameState, feature));
+}
 
 const COLOUR_PALETTE = {
   success: '#00ff66',
@@ -123,40 +133,44 @@ const COLOUR_PALETTE = {
   highlight: '#6600ff'
 };
 
-function getMapFeatureStyle(feature) {
-  const colour = getMapFeatureColor(feature, {
-    gameOver: gameState.gameOver
-  });
+function getCountryStyle(gameState: GameState, country?: CountryFeature) {
+  if (!country) {
+    return {};
+  }
+  const colour = getCountryColor(country, gameState);
   return {
     color: colour,
     fillColor: colour
   };
 }
 
-function getMapFeatureColor(feature, { gameOver }) {
-  if (gameOver) {
-    if (isMapFeatureCorrect(feature)) {
+function getCountryColor(country: CountryFeature, gameState: GameState) {
+  if (gameState.gameOver) {
+    if (isCountryCorrect(country, gameState)) {
       return COLOUR_PALETTE.success;
     }
-    if (isMapFeatureSelected(feature)) {
+    if (isCountrySelected(country, gameState)) {
       return COLOUR_PALETTE.error;
     }
     return 'transparent';
   }
-  if (isMapFeatureSelected(feature)) {
+  if (isCountrySelected(country, gameState)) {
     return COLOUR_PALETTE.highlight;
   }
   return 'transparent';
 }
 
-function isMapFeatureCorrect(feature) {
-  return feature.properties.name === gameState.targetCountryName;
+function isCountryCorrect(country: CountryFeature, gameState: GameState) {
+  if (gameState.targetCountry) {
+    return country.properties.name === gameState.targetCountry.properties.name;
+  }
+  return false;
 }
 
-function isMapFeatureSelected(feature) {
-  if (gameState.selectedMapFeature) {
+function isCountrySelected(country: CountryFeature, gameState: GameState) {
+  if (gameState.selectedCountry) {
     return (
-      feature.properties.name === gameState.selectedMapFeature.properties.name
+      country.properties.name === gameState.selectedCountry.properties.name
     );
   }
   return false;
@@ -164,7 +178,7 @@ function isMapFeatureSelected(feature) {
 
 // COUNTRY HOVER + CLICK EVENTS
 
-function onEachFeature(feature, layer) {
+function onEachFeature(_: CountryFeature, layer: Layer) {
   layer.on({
     mouseover: onMouseOverFeature,
     mouseout: onMouseOutFeature,
@@ -172,13 +186,13 @@ function onEachFeature(feature, layer) {
   });
 }
 
-function onMouseOverFeature(e) {
-  if (gameState.gameOver || isMapFeatureSelected(e.target.feature)) {
+function onMouseOverFeature(e: LeafletMouseEvent) {
+  if (gameState.gameOver || isCountrySelected(e.target.feature, gameState)) {
     return;
   }
   const layer = e.target;
   layer.setStyle({
-    color: '#0066ff',
+    color: '#0066ff', // TODO: add to colour palette
     fillColor: '#0066ff',
     fillOpacity: 0.5,
     weight: 2
@@ -186,50 +200,50 @@ function onMouseOverFeature(e) {
   layer.bringToFront();
 }
 
-function onMouseOutFeature(e) {
-  if (gameState.gameOver || isMapFeatureSelected(e.target.feature)) {
+function onMouseOutFeature(e: LeafletMouseEvent) {
+  if (gameState.gameOver || isCountrySelected(e.target.feature, gameState)) {
     return;
   }
-  countryData.boundaries.resetStyle(e.target);
+  countriesGeoJson?.resetStyle(e.target);
 }
 
-function zoomToFeature(e) {
+function zoomToFeature(e: LeafletMouseEvent) {
   map.fitBounds(e.target.getBounds());
 }
 
 // MAP CLICK EVENT
 
-map.on('click', onMapClick);
-
-function onMapClick(e) {
-  if (gameState.gameOver || !countryData.rawData) {
+map.on('click', e => {
+  if (gameState.gameOver || !countries) {
     return;
   }
-  gameState.selectedMapFeature = countryData.rawData.features.find(feature =>
-    isClickInsideMapFeature(e, feature)
+  gameState.selectedCountry = countries.find(feature =>
+    isPointInsideCountry(e.latlng, feature)
   );
-  if (gameState.selectedMapFeature) {
-    countryData.boundaries.setStyle(getMapFeatureStyle);
+  if (countriesGeoJson && gameState.selectedCountry) {
+    setStyle(countriesGeoJson, gameState);
     confirmationPopup.setLatLng(e.latlng).openOn(map);
   }
-}
+});
 
-function isClickInsideMapFeature(e, feature) {
-  if (isMapFeatureMultiPolygons(feature)) {
-    return feature.geometry.coordinates.some(poly =>
-      isPointInsidePolygon(e.latlng, poly)
-    );
+function isPointInsideCountry(point: LatLng, feature: CountryFeature) {
+  switch (feature.geometry.type) {
+    case 'Polygon':
+      return isPointInsidePolygon(point, feature.geometry.coordinates);
+
+    case 'MultiPolygon':
+      return feature.geometry.coordinates.some(poly =>
+        isPointInsidePolygon(point, poly)
+      );
+
+    default:
+      console.error('Unexpected feature geometry type', feature.geometry.type);
+      return false;
   }
-  return isPointInsidePolygon(e.latlng, feature.geometry.coordinates);
-}
-
-function isMapFeatureMultiPolygons(feature) {
-  // True for countries with multiple separated territories.
-  return feature.geometry.coordinates[0].length === 1;
 }
 
 // https://stackoverflow.com/questions/31790344/determine-if-a-point-reside-inside-a-leaflet-polygon
-function isPointInsidePolygon(point, poly) {
+function isPointInsidePolygon(point: LatLng, poly: Polygon['coordinates']) {
   const x = point.lat;
   const y = point.lng;
   let inside = false;
@@ -248,50 +262,48 @@ function isPointInsidePolygon(point, poly) {
 
 // POPUP EVENTS
 
-confirmGuessElement.addEventListener('click', onConfirmGuess);
-
-function onConfirmGuess() {
+confirmGuessElement.addEventListener('click', () => {
   confirmationPopup.close();
-  gameState.guessCorrect = isMapFeatureCorrect(gameState.selectedMapFeature);
-  if (gameState.guessCorrect) {
-    setGuessCorrectElementVisible();
-  } else {
-    setGuessIncorrectElementVisible();
+  if (gameState.selectedCountry) {
+    if (isCountryCorrect(gameState.selectedCountry, gameState)) {
+      setGuessCorrectElementVisible();
+    } else {
+      setGuessIncorrectElementVisible(
+        gameState.selectedCountry.properties.name
+      );
+    }
+    gameState.gameOver = true;
+    countriesGeoJson?.setStyle(feature => getCountryStyle(gameState, feature));
+    resultDialogElement.show();
   }
-  gameState.gameOver = true;
-  countryData.boundaries.setStyle(getMapFeatureStyle);
-  resultDialogElement.show();
-}
+});
 
 function setGuessCorrectElementVisible() {
   guessCorrectElement.style.display = 'block';
   guessIncorrectElement.style.display = 'none';
 }
 
-function setGuessIncorrectElementVisible() {
+function setGuessIncorrectElementVisible(selectedCountryName: string) {
   guessCorrectElement.style.display = 'none';
   guessIncorrectElement.style.display = 'block';
-  guessElement.textContent = gameState.selectedMapFeature.properties.name;
+  guessElement.textContent = selectedCountryName;
 }
 
-seeAnswerElement.addEventListener('click', onSeeAnswer);
+seeAnswerElement.addEventListener('click', () => {
+  if (gameState.targetCountry) {
+    map.flyToBounds(L.geoJson(gameState.targetCountry).getBounds());
+  }
+});
 
-function onSeeAnswer() {
-  const answer = countryData.rawData.features.find(isMapFeatureCorrect);
-  map.flyToBounds(L.geoJson(answer).getBounds());
-}
-
-playAgainElement.addEventListener('click', onPlayAgain);
-
-function onPlayAgain() {
+playAgainElement.addEventListener('click', () => {
   resultDialogElement.close();
-  resetGameState();
-  countryData.boundaries.resetStyle();
-  map.fitWorld();
-}
+  if (countries && countriesGeoJson) {
+    resetGame(map, countries, countriesGeoJson);
+  }
+});
 
-// HELPER FUNCTIONS
+// HELPERS
 
-function isCountry(geoJsonFeature) {
-  return geoJsonFeature.properties.status === 'Member State';
+function randomElement<T>(array: T[]) {
+  return array[Math.floor(Math.random() * array.length)];
 }
