@@ -22,7 +22,7 @@ jobs:
         run: npm ci
 
       - name: Build
-        run: npm run build
+        run: npm run build -- --public-url /find-the-country/
 
       - name: Upload pages artifact
         uses: actions/upload-pages-artifact@v1
