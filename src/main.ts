@@ -50,7 +50,7 @@ const confirmationPopup = L.popup().setContent(confirmGuessButton);
 
 let globalState: GlobalState;
 
-fetch('/country-boundaries.geojson')
+fetch('./country-boundaries.geojson')
   .then(response => response.json())
   .then((data: FeatureCollection<Geometry, CountryGeoJsonProperties>) => {
     geoJsonLayer.addData(data);
